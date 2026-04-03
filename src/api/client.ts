@@ -33,56 +33,72 @@ apiClient.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 apiClient.interceptors.response.use(
   (res) => res,
   async (error) => {
+    // Brak config = błąd sieciowy, nie HTTP — przepuść dalej
+    if (!error.config) {
+      return Promise.reject(buildApiError(error))
+    }
+
     const original = error.config as InternalAxiosRequestConfig & {
       _retry?: boolean
     }
 
-    const is401 =
-      error.response?.status === 401 &&
-      !original._retry &&
-      !original.url?.includes("/auth/")
+    const isAuthEndpoint = !!original.url?.includes("/auth/")
+    const is401 = error.response?.status === 401 && !original._retry && !isAuthEndpoint
 
-    if (is401) {
-      original._retry = true
-
-      const storedRefreshToken = localStorage.getItem("refreshToken")
-      if (!storedRefreshToken) {
-        setAccessToken(null)
-        window.location.href = "/login"
-        return Promise.reject(buildApiError(error))
-      }
-
-      if (!refreshPromise) {
-        refreshPromise = (async () => {
-          const { refreshTokenApi } = await import("@/api/auth/auth")
-          const res = await refreshTokenApi({ refreshToken: storedRefreshToken })
-          setAccessToken(res.accessToken)
-          localStorage.setItem("refreshToken", res.refreshToken)
-          return res.accessToken
-        })()
-          .catch((err) => {
-            setAccessToken(null)
-            localStorage.removeItem("refreshToken")
-            window.location.href = "/login"
-            return Promise.reject(err)
-          })
-          .finally(() => {
-            refreshPromise = null
-          })
-      }
-
-      try {
-        const newToken = await refreshPromise
-        original.headers.Authorization = `Bearer ${newToken}`
-        return apiClient(original)
-      } catch {
-        return Promise.reject(buildApiError(error))
-      }
+    if (!is401) {
+      return Promise.reject(buildApiError(error))
     }
 
-    return Promise.reject(buildApiError(error))
+    original._retry = true
+
+    // Jeśli nie ma refresh tokenu — od razu wyloguj
+    const storedRefreshToken = localStorage.getItem("refreshToken")
+    if (!storedRefreshToken) {
+      redirectToLogin()
+      return Promise.reject(buildApiError(error))
+    }
+
+    // Serializacja — jeden refresh na raz, reszta czeka
+    if (!refreshPromise) {
+      refreshPromise = doRefresh(storedRefreshToken).finally(() => {
+        refreshPromise = null
+      })
+    }
+
+    try {
+      await refreshPromise
+      // Nowy token zostanie ustawiony przez request interceptor
+      return apiClient(original)
+    } catch {
+      // Refresh się nie udał — token w localStorage już wyczyszczony w doRefresh
+      redirectToLogin()
+      return Promise.reject(buildApiError(error))
+    }
   }
 )
+
+async function doRefresh(storedRefreshToken: string): Promise<string> {
+  try {
+    const { refreshTokenApi } = await import("@/api/auth/auth")
+    const res = await refreshTokenApi({ token: storedRefreshToken })
+    setAccessToken(res.accessToken)
+    localStorage.setItem("refreshToken", res.refreshToken)
+    return res.accessToken
+  } catch (err) {
+    setAccessToken(null)
+    localStorage.removeItem("refreshToken")
+    throw err
+  }
+}
+
+function redirectToLogin() {
+  setAccessToken(null)
+  localStorage.removeItem("refreshToken")
+  // setTimeout żeby nie przerywać aktywnych promise-chain
+  setTimeout(() => {
+    window.location.href = "/login"
+  }, 0)
+}
 
 function buildApiError(error: unknown): ApiError {
   if (
@@ -92,7 +108,9 @@ function buildApiError(error: unknown): ApiError {
     error.response &&
     typeof error.response === "object" &&
     "data" in error.response &&
-    error.response.data
+    error.response.data &&
+    typeof error.response.data === "object" &&
+    "type" in (error.response.data as object)
   ) {
     return error.response.data as ApiError
   }

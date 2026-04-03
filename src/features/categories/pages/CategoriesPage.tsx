@@ -22,31 +22,42 @@ import type { ApiError } from "@/api/client"
 
 type Mode = "view" | "create" | "edit"
 
+function findCategoryById(nodes: CategoryDto[], id: string): CategoryDto | null {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const found = findCategoryById(node.children, id)
+    if (found) return found
+  }
+  return null
+}
+
 export function CategoriesPage() {
   const { data: categories, isLoading } = useCategories()
   const createCategory = useCreateCategory()
   const updateCategory = useUpdateCategory()
   const deleteCategory = useDeleteCategory()
 
-  const [selected, setSelected] = useState<CategoryDto | null>(null)
+  const [selectedId, setSelectedId] = useState<string | null>(null)
   const [mode, setMode] = useState<Mode>("view")
   const [parentForNew, setParentForNew] = useState<CategoryDto | null>(null)
   const [deletingCategory, setDeletingCategory] = useState<CategoryDto | null>(null)
 
+  const selected = selectedId ? findCategoryById(categories ?? [], selectedId) : null
+
   function handleSelect(cat: CategoryDto) {
-    setSelected(cat)
+    setSelectedId(cat.id)
     setMode("edit")
     setParentForNew(null)
   }
 
   function handleAddRoot() {
-    setSelected(null)
+    setSelectedId(null)
     setParentForNew(null)
     setMode("create")
   }
 
   function handleAddChild(parent: CategoryDto) {
-    setSelected(null)
+    setSelectedId(null)
     setParentForNew(parent)
     setMode("create")
   }
@@ -76,7 +87,7 @@ export function CategoriesPage() {
         toast.success("Kategoria zaktualizowana")
       }
       setMode("view")
-      setSelected(null)
+      setSelectedId(null)
     } catch (err: unknown) {
       const e = err as ApiError
       toast.error(e?.message ?? "Wystąpił błąd")
@@ -89,8 +100,8 @@ export function CategoriesPage() {
       await deleteCategory.mutateAsync(deletingCategory.id)
       toast.success("Kategoria usunięta")
       setDeletingCategory(null)
-      if (selected?.id === deletingCategory.id) {
-        setSelected(null)
+      if (selectedId === deletingCategory.id) {
+        setSelectedId(null)
         setMode("view")
       }
     } catch (err: unknown) {

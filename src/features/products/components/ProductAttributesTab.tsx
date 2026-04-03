@@ -10,19 +10,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { useAttributesByCategoryId } from "@/features/attributes/hooks/useAttributes"
+import { useCategories } from "@/features/categories/hooks/useCategories"
 import { useSetProductAttributes } from "../hooks/useProductMutations"
 import type { ProductDto } from "@/api/catalog/products"
+import type { CategoryDto } from "@/api/catalog/categories"
 import type { ApiError } from "@/api/client"
 
 interface ProductAttributesTabProps {
   product: ProductDto
 }
 
+function findCategory(
+  nodes: CategoryDto[],
+  id: string
+): CategoryDto | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node
+    const found = findCategory(node.children, id)
+    if (found) return found
+  }
+}
+
 export function ProductAttributesTab({ product }: ProductAttributesTabProps) {
-  const { data: availableAttrs } = useAttributesByCategoryId(
-    product.mainCategoryId
-  )
+  const { data: categories } = useCategories()
+  const mainCategory = categories
+    ? findCategory(categories, product.mainCategoryId)
+    : undefined
+  const availableAttrs = mainCategory?.attributes
   const setAttributes = useSetProductAttributes()
 
   const [selectedAttrId, setSelectedAttrId] = useState("")

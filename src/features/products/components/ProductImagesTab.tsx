@@ -157,8 +157,8 @@ export function ProductImagesTab({ product }: ProductImagesTabProps) {
                     <FormItem>
                       <FormLabel>Wariant (opcjonalnie)</FormLabel>
                       <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
+                        onValueChange={(v) => field.onChange(v === "none" ? "" : v)}
+                        value={field.value || "none"}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -166,7 +166,7 @@ export function ProductImagesTab({ product }: ProductImagesTabProps) {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">Globalne</SelectItem>
+                          <SelectItem value="none">Globalne</SelectItem>
                           {product.variants.map((v) => (
                             <SelectItem key={v.id} value={v.id}>
                               {v.sku}

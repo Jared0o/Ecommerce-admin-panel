@@ -25,7 +25,7 @@ export function useLogout() {
     const refreshToken = localStorage.getItem("refreshToken")
     if (refreshToken) {
       try {
-        await revokeTokenApi({ refreshToken })
+        await revokeTokenApi({ token: refreshToken })
       } catch {
         // ignore revoke errors
       }

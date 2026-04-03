@@ -8,11 +8,11 @@ export interface LoginRequest {
 export interface AuthResponse {
   accessToken: string
   refreshToken: string
-  expiresIn: number
+  expiresAt: string
 }
 
 export interface RefreshRequest {
-  refreshToken: string
+  token: string
 }
 
 export async function loginApi(data: LoginRequest): Promise<AuthResponse> {

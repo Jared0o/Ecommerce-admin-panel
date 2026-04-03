@@ -32,6 +32,7 @@ import type { CategoryDto } from "@/api/catalog/categories"
 const productSchema = z.object({
   name: z.string().min(1, "Nazwa jest wymagana").max(300),
   slug: z.string().nullable().optional(),
+  sku: z.string().nullable().optional(),
   description: z.string().nullable().optional(),
   shortDescription: z.string().nullable().optional(),
   mainCategoryId: z.string().min(1, "Kategoria jest wymagana"),
@@ -75,6 +76,7 @@ export function ProductGeneralForm({
     defaultValues: {
       name: product?.name ?? "",
       slug: product?.slug ?? "",
+      sku: "",
       description: product?.description ?? "",
       shortDescription: product?.shortDescription ?? "",
       mainCategoryId: product?.mainCategoryId ?? "",
@@ -116,6 +118,26 @@ export function ProductGeneralForm({
             </FormItem>
           )}
         />
+
+        {!product && (
+          <FormField
+            control={form.control}
+            name="sku"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>SKU</FormLabel>
+                <FormControl>
+                  <Input
+                    placeholder="np. PROD-001 (opcjonalne — jeśli puste, backend użyje sluga)"
+                    {...field}
+                    value={field.value ?? ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        )}
 
         {product && (
           <FormField
@@ -195,7 +217,7 @@ export function ProductGeneralForm({
           />
         </div>
 
-        {!hasVariants && (
+        {!product && (
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -250,7 +272,7 @@ export function ProductGeneralForm({
           </div>
         )}
 
-        {hasVariants && (
+        {!!product && (
           <div className="rounded-md border bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
             Cena jest zarządzana na poziomie wariantów
           </div>

@@ -1,7 +1,8 @@
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { ShoppingBag } from "lucide-react"
+import { ShoppingBag, AlertCircle } from "lucide-react"
 import {
   Form,
   FormControl,
@@ -21,7 +22,6 @@ import {
 } from "@/components/ui/card"
 import { useLogin } from "@/features/auth/hooks/useAuth"
 import type { ApiError } from "@/api/client"
-import { toast } from "sonner"
 
 const loginSchema = z.object({
   email: z.string().email("Podaj poprawny adres email"),
@@ -32,12 +32,15 @@ type LoginFormValues = z.infer<typeof loginSchema>
 
 export function LoginPage() {
   const login = useLogin()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   })
 
   async function onSubmit(data: LoginFormValues) {
+    setErrorMessage(null)
     try {
       await login.mutateAsync(data)
     } catch (err: unknown) {
@@ -49,7 +52,7 @@ export function LoginPage() {
           })
         )
       } else {
-        toast.error(e?.message ?? "Błąd logowania")
+        setErrorMessage(e?.message ?? "Nieprawidłowy email lub hasło")
       }
     }
   }
@@ -67,6 +70,12 @@ export function LoginPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              {errorMessage && (
+                <div className="flex items-center gap-2 rounded-md border border-destructive/50 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  {errorMessage}
+                </div>
+              )}
               <FormField
                 control={form.control}
                 name="email"

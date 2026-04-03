@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/select"
 import { Separator } from "@/components/ui/separator"
 import { useAttributes } from "@/features/attributes/hooks/useAttributes"
-import { useAttributesByCategoryId } from "@/features/attributes/hooks/useAttributes"
 import {
   useAddCategoryAttribute,
   useRemoveCategoryAttribute,
@@ -28,12 +27,12 @@ export function CategoryAttributeManager({
 }: CategoryAttributeManagerProps) {
   const [selectedAttrId, setSelectedAttrId] = useState("")
 
-  const { data: assigned, isLoading } = useAttributesByCategoryId(category.id)
-  const { data: allAttrs } = useAttributes({ page: 1, pageSize: 200 })
+  const { data: allAttrs, isLoading } = useAttributes({ page: 1, pageSize: 200 })
   const addAttr = useAddCategoryAttribute()
   const removeAttr = useRemoveCategoryAttribute()
 
-  const assignedIds = new Set(assigned?.map((a) => a.id) ?? [])
+  const assigned = category.attributes
+  const assignedIds = new Set(assigned.map((a) => a.id))
   const available =
     allAttrs?.items.filter((a) => !assignedIds.has(a.id)) ?? []
 
@@ -72,13 +71,11 @@ export function CategoryAttributeManager({
       </p>
 
       {/* Assigned list */}
-      {isLoading ? (
-        <p className="text-xs text-muted-foreground">Ładowanie...</p>
-      ) : assigned?.length === 0 ? (
+      {assigned.length === 0 ? (
         <p className="text-xs text-muted-foreground mb-3">Brak przypisanych atrybutów</p>
       ) : (
         <ul className="space-y-1 mb-3">
-          {assigned?.map((attr) => (
+          {assigned.map((attr) => (
             <li
               key={attr.id}
               className="flex items-center justify-between rounded-md border bg-muted/30 px-3 py-1.5 text-sm"

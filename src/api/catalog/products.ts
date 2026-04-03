@@ -65,7 +65,6 @@ export interface GetProductsParams {
   pageSize?: number
   categoryId?: string
   brandId?: string
-  status?: ProductStatus
   minPrice?: number
   maxPrice?: number
 }
@@ -76,6 +75,7 @@ export interface CreateProductRequest {
   shortDescription?: string | null
   mainCategoryId: string
   brandId?: string | null
+  sku?: string | null
   price?: number | null
   compareAtPrice?: number | null
   isFeatured?: boolean
@@ -90,8 +90,6 @@ export interface UpdateProductRequest {
   shortDescription?: string | null
   mainCategoryId: string
   brandId?: string | null
-  price?: number | null
-  compareAtPrice?: number | null
   isFeatured?: boolean
   tags?: string[]
 }

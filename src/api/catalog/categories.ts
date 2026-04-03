@@ -1,4 +1,5 @@
 import { apiClient } from "@/api/client"
+import type { AttributeDefinitionDto } from "@/api/catalog/attributes"
 
 export interface CategoryDto {
   id: string
@@ -11,6 +12,7 @@ export interface CategoryDto {
   sortOrder: number
   isActive: boolean
   createdAt: string
+  attributes: AttributeDefinitionDto[]
   children: CategoryDto[]
 }
 

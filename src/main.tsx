@@ -21,7 +21,7 @@ async function bootstrap() {
   const refreshToken = localStorage.getItem("refreshToken")
   if (refreshToken) {
     try {
-      const res = await refreshTokenApi({ refreshToken })
+      const res = await refreshTokenApi({ token: refreshToken })
       setAccessToken(res.accessToken)
       localStorage.setItem("refreshToken", res.refreshToken)
     } catch {
